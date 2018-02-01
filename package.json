@@ -1,0 +1,20 @@
+{
+  "name": "sns-sqs",
+  "version": "1.0.0",
+  "description": "AWS SNS&SQS Test App",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "keywords": [
+    "sns",
+    "sqs"
+  ],
+  "author": "abhishek",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.188.0",
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2"
+  }
+}
