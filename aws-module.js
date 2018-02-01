@@ -53,14 +53,15 @@ module.exports = {
                 getQueueAttr(queueUrl, ['QueueArn']).then(data => {
                     console.log("QueueArn:", data);
                     queueArn = data.Attributes.QueueArn;
+                    /*setting subscription*/
                     sns.subscribe({
                         'TopicArn': topicArn,
                         'Protocol': 'sqs',
                         'Endpoint': queueArn
                     }, function(err, result) {
-                        console.log(result);
+                        console.log("SubscriptionArn:", result);
                         if (err) {
-                            console.log(err);
+                            reject(err);
                         } else {
                             /*setting the policy SQS:SendMessage*/
                             let attributes = {
@@ -88,10 +89,9 @@ module.exports = {
                                 }
                             }, function(err, data) {
                                 if (err) {
-                                    console.log(err);
-                                    reject("Policy Assigning Failed!");
+                                    reject(err);
                                 }
-                                console.log(data);
+                                console.log("Policy SendMessage:", data);
                                 resolve(values);
                             });
                         }
