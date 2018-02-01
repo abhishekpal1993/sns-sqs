@@ -9,15 +9,6 @@ var awsModule = require('./aws-module');
 /*Default*/
 console.log("index.js || App started!");
 
-/*Creating default queue first*/
-awsModule.createIfNotExists()
-    .then(data => {
-        console.log("index.js || createQueue Response:", data);
-    })
-    .catch(err => {
-        console.log("index.js || createQueue Error:", err);
-    });
-
 /*Express body parse*/
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -72,10 +63,20 @@ app.get('/receiveAllMessages', function(req, res) {
         });
 });
 
-/*Express Server*/
-var server = app.listen(1337, function() {
-    var host = server.address().address;
-    var port = server.address().port;
 
-    console.log('index.js || sns-sqs listening at http://%s:%s', host, port);
-});
+/*Creating default queue first*/
+awsModule.createIfNotExists()
+    .then(data => {
+        console.log("index.js || createQueue Response:", data);
+
+        /*Express Server*/
+        var server = app.listen(1337, function() {
+            var host = server.address().address;
+            var port = server.address().port;
+
+            console.log('index.js || sns-sqs listening at http://%s:%s', host, port);
+        });
+    })
+    .catch(err => {
+        console.log("index.js || createQueue Error:", err);
+    });

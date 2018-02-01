@@ -78,8 +78,6 @@ module.exports = {
                     promises.push(promise);
                 }
                 Promise.all(promises).then(function(values) {
-                    console.log("promises:", JSON.stringify(promises));
-                    console.log("List:", list);
                     fulfill(list);
                 });
             });
@@ -114,7 +112,7 @@ function receiveOneMessage(queueUrlParam) {
     let params = {
         QueueUrl: queueUrlParam,
         MaxNumberOfMessages: 1,
-        VisibilityTimeout: 0
+        VisibilityTimeout: 1
     };
 
     return new Promise(function(fulfill, reject) {
