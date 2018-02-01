@@ -1,6 +1,6 @@
 # sns-sqs
 
-This tutorial will help you setup the AWS SDK using NodeJS. Run following commands in order:
+Run following commands in order:
 ```
 1] git clone https://github.com/abhishekpal123/sns-sqs.git
 2] cd sns-sqs
