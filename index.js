@@ -14,13 +14,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 /*Routes and Functions*/
-app.post('/createMessage', function(req, res) {
+app.post('/sns/createMessage', function(req, res) {
     console.log("***Starts***");
     if (!req.body.hasOwnProperty('message')) {
         console.log("index.js || createMessage Error: message parameter is empty");
         res.send({ errorMessage: 'message is empty' });
     } else
-        awsModule.createMessage(req.body.message)
+        awsModule.snsPublishMessage(req.body.message)
         .then(data => {
             console.log("index.js || createMessage Response:", data);
             res.send(data);
@@ -33,9 +33,28 @@ app.post('/createMessage', function(req, res) {
         });
 });
 
-app.get('/receiveMessage', function(req, res) {
+app.post('/sqs/createMessage', function(req, res) {
     console.log("***Starts***");
-    awsModule.receiveMessage(req.body.message)
+    if (!req.body.hasOwnProperty('message')) {
+        console.log("index.js || createMessage Error: message parameter is empty");
+        res.send({ errorMessage: 'message is empty' });
+    } else
+        awsModule.sqsCreateMessage(req.body.message)
+        .then(data => {
+            console.log("index.js || createMessage Response:", data);
+            res.send(data);
+            console.log("***Ends***");
+        })
+        .catch(err => {
+            console.log("index.js || createMessage Error:", err);
+            res.send(err);
+            console.log("***Ends***");
+        });
+});
+
+app.get('/sqs/receiveMessage', function(req, res) {
+    console.log("***Starts***");
+    awsModule.sqsReceiveMessage(req.body.message)
         .then(data => {
             console.log("index.js || receiveMessage Response:", data);
             res.send(data);
@@ -48,9 +67,9 @@ app.get('/receiveMessage', function(req, res) {
         });
 });
 
-app.get('/receiveAllMessages', function(req, res) {
+app.get('/sqs/receiveAllMessages', function(req, res) {
     console.log("***Starts***");
-    awsModule.receiveAllMessages(req.body.message)
+    awsModule.sqsReceiveAllMessages(req.body.message)
         .then(data => {
             console.log("index.js || receiveMessage Response:", data);
             res.send(data);
@@ -68,14 +87,14 @@ app.get('/receiveAllMessages', function(req, res) {
 awsModule.createIfNotExists()
     .then(data => {
         console.log("index.js || createQueue Response:", data);
-
-        /*Express Server*/
-        var server = app.listen(1337, function() {
-            var host = server.address().address;
-            var port = server.address().port;
-
-            console.log('index.js || sns-sqs listening at http://%s:%s', host, port);
-        });
+        if (data[0].hasOwnProperty('QueueUrl') && data[1].hasOwnProperty('TopicArn'))
+            /*Express Server*/
+            var server = app.listen(1337, function() {
+                var host = server.address().address;
+                var port = server.address().port;
+                console.log('index.js || express started');
+                console.log('index.js || sns-sqs listening at http://%s:%s', host, port);
+            });
     })
     .catch(err => {
         console.log("index.js || createQueue Error:", err);

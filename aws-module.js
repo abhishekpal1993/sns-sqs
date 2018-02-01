@@ -4,30 +4,104 @@ var aws = require('aws-sdk');
 /*Default*/
 console.log("aws-module.js || custom module imported!");
 
-/*Create sqs parameter*/
+/*Create sqs & sns parameter*/
 aws.config.loadFromPath(__dirname + '/config.json');
 var sqs = new aws.SQS();
+var sns = new aws.SNS();
 
 /*Variables*/
 var queueUrl = "";
+var topicArn = "";
+var queueArn = "";
 
 /*Module Exports*/
 module.exports = {
     createIfNotExists: function() {
         console.log("aws-module.js || createIfNotExists called!");
-        return new Promise(function(fulfill, reject) {
-            sqs.createQueue({ QueueName: "sns-sqs-queue" }, function(err, data) {
-                if (err)
-                    reject(err);
-                else {
-                    queueUrl = data.QueueUrl;
-                    fulfill(data);
-                }
+        let promises = [];
+        return new Promise(function(resolve, reject) {
+            /*create sqs queue*/
+            promises.push(
+                new Promise(function(fulfill, reject) {
+                    sqs.createQueue({ QueueName: 'sns-sqs-queue' }, function(err, data) {
+                        if (err)
+                            reject(err);
+                        else {
+                            queueUrl = data.QueueUrl;
+                            console.log("queueUrl:", data);
+                            fulfill(data);
+                        }
+                    });
+                })
+            );
+            /*create sns queue*/
+            promises.push(
+                new Promise(function(fulfill, reject) {
+                    sns.createTopic({ 'Name': 'sns-sqs-topic' }, function(err, data) {
+                        if (err)
+                            reject(err);
+                        else {
+                            topicArn = data.TopicArn;
+                            console.log("topicArn:", data);
+                            fulfill(data);
+                        }
+                    });
+                })
+            );
+            Promise.all(promises).then(function(values) {
+                /*getting the queueARN*/
+                getQueueAttr(queueUrl, ['QueueArn']).then(data => {
+                    console.log("QueueArn:", data);
+                    queueArn = data.Attributes.QueueArn;
+                    sns.subscribe({
+                        'TopicArn': topicArn,
+                        'Protocol': 'sqs',
+                        'Endpoint': queueArn
+                    }, function(err, result) {
+                        console.log(result);
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            /*setting the policy SQS:SendMessage*/
+                            let attributes = {
+                                "Version": "2012-10-17",
+                                "Id": "SQSDefaultPolicy",
+                                "Statement": [{
+                                    "Sid": "AllowPESends",
+                                    "Effect": "Allow",
+                                    "Principal": {
+                                        "AWS": "*"
+                                    },
+                                    "Action": "SQS:SendMessage",
+                                    "Resource": queueArn,
+                                    "Condition": {
+                                        "ArnEquals": {
+                                            "aws:SourceArn": topicArn
+                                        }
+                                    }
+                                }]
+                            };
+                            sqs.setQueueAttributes({
+                                QueueUrl: queueUrl,
+                                Attributes: {
+                                    'Policy': JSON.stringify(attributes)
+                                }
+                            }, function(err, data) {
+                                if (err) {
+                                    console.log(err);
+                                    reject("Policy Assigning Failed!");
+                                }
+                                console.log(data);
+                                resolve(values);
+                            });
+                        }
+                    });
+                });
             });
         });
     },
 
-    createMessage: function(message) {
+    sqsCreateMessage: function(message) {
         console.log("aws-module.js || createMessage called!");
         let params = {
             MessageBody: message,
@@ -46,7 +120,8 @@ module.exports = {
         });
     },
 
-    receiveMessage: function() {
+    sqsReceiveMessage: function() {
+        console.log("aws-module.js || sqsReceiveMessage called!");
         return receiveOneMessage(queueUrl).then(data => {
             if (data.hasOwnProperty('Messages'))
                 data.Messages.forEach(function(element) {
@@ -58,13 +133,14 @@ module.exports = {
         });
     },
 
-    receiveAllMessages: function() {
+    sqsReceiveAllMessages: function() {
+        console.log("aws-module.js || sqsReceiveAllMessages called!");
         let list = [];
         let promises = [];
         return new Promise(function(fulfill, reject) {
-            getQueueAttr(queueUrl).then(data => {
+            getQueueAttr(queueUrl, ['All']).then(data => {
                 console.log("ApproximateNumberOfMessages:", data);
-                for (let i = 0; i < data; i++) {
+                for (let i = 0; i < data.Attributes.ApproximateNumberOfMessages; i++) {
                     let promise = receiveOneMessage(queueUrl).then(data1 => {
                         if (data1.hasOwnProperty('Messages')) {
                             data1.Messages.forEach(function(element) {
@@ -82,6 +158,19 @@ module.exports = {
                 });
             });
         });
+    },
+
+    snsPublishMessage: function(message) {
+        console.log("aws-module.js || snsPublishMessage called!");
+        let params = {
+            TopicArn: topicArn,
+            Message: message
+        };
+        return new Promise(function(fulfill, reject) {
+            sns.publish(params, function(err, data) {
+                fulfill(data);
+            });
+        });
     }
 
 };
@@ -89,11 +178,11 @@ module.exports = {
 
 /*Helper Functions*/
 
-function getQueueAttr(queueUrlParam) {
+function getQueueAttr(queueUrlParam, attributeNames) {
     console.log("aws-module.js || getQueueAttr called!");
     let params = {
         QueueUrl: queueUrlParam,
-        AttributeNames: ['All']
+        AttributeNames: attributeNames
     };
 
     return new Promise(function(fulfill, reject) {
@@ -101,7 +190,7 @@ function getQueueAttr(queueUrlParam) {
             if (err)
                 reject(err);
             else {
-                fulfill(data.Attributes.ApproximateNumberOfMessages);
+                fulfill(data);
             }
         });
     });
