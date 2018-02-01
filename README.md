@@ -1,15 +1,26 @@
 # sns-sqs
-
-Run following commands in order:
+Express Project to test AWS SNS-SQS Service
+***
+## Setup
+***Run following commands in order:***
 ```
-1] git clone https://github.com/abhishekpal123/sns-sqs.git
-2] cd sns-sqs
-3] npm install
-4] cp config-sample.json config.json
+# git clone https://github.com/abhishekpal123/sns-sqs.git
+# cd sns-sqs
+# npm install
+# cp config-sample.json config.json
 ```
-
 ***NOTE: Here you will want to edit config.json with your AWS keys.***
 
+**To Run the Server:**
 ```
 node index.js
 ```
+***
+## Express API
+
+| Path | Method | Body
+| :----|:----|:----|
+| `/sns/createMessage`   | post | { message : _"text"_ } |
+| `/sqs/createMessage`   | post | { message : _"text"_ } |
+| `/sqs/receiveMessage`   | get | |
+| `/sqs/receiveAllMessages`   | get | |
