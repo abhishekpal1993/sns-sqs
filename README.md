@@ -11,20 +11,20 @@ Express Project to test AWS SNS-SQS Service
 ```
 ***NOTE: Here you will want to edit config.json with your AWS keys.***
 
-**To Run the Server:**
-```
-node index.js
-```
 ***
 ## Working
 
-Launching the application does following operations for you as part of AWS Setup:
+**Launching the application does following operations for you as part of AWS Setup:**
 ```
 # creates SQS Queue with name "sns-sqs-queue"
 # creates SNS Topic with name "sns-sqs-topic" 
 # Adds SNS Subscription to SQS
 # Creates a Policy to allow SendMessage from SNS to SQS
 ````
+**To Run the Server:**
+```
+node index.js
+```
 ***
 ## Server REST API List
 
